@@ -1,1 +1,902 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Toribash Bracket Builder (MVP)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #0b1220; }
+    /* Simple bracket connector lines */
+    .round-col { min-width: 280px; }
+    .match-card { position: relative; }
+    .connector-right::after{
+      content:"";
+      position:absolute;
+      right:-22px;
+      top:50%;
+      width:22px;
+      height:2px;
+      background: rgba(148,163,184,.5);
+      transform: translateY(-50%);
+    }
+    .connector-vert{
+      position:absolute;
+      right:-22px;
+      top:50%;
+      width:2px;
+      height:70px;
+      background: rgba(148,163,184,.5);
+      transform: translateY(-35px);
+    }
+    @media (max-width: 1024px){
+      .round-col { min-width: 260px; }
+    }
+  </style>
+</head>
+<body class="text-slate-200">
+  <header class="sticky top-0 z-20 border-b border-slate-800 bg-slate-950/80 backdrop-blur">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
+      <div class="flex-1">
+        <div class="text-lg font-semibold leading-tight">Toribash Tournament Builder</div>
+        <div class="text-xs text-slate-400">Static MVP for GitHub Pages • Shareable via link • BBCode export</div>
+      </div>
+
+      <button id="btnShare" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm">
+        Share Link
+      </button>
+      <button id="btnCopyBBCode" class="px-3 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-sm">
+        Copy BBCode
+      </button>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <!-- Left: Setup -->
+    <section class="lg:col-span-4 space-y-4">
+      <div class="rounded-2xl border border-slate-800 bg-slate-950 p-4">
+        <div class="flex items-center justify-between">
+          <h2 class="font-semibold">Tournament Setup</h2>
+          <button id="btnNew" class="text-xs px-2 py-1 rounded bg-slate-800 hover:bg-slate-700">New</button>
+        </div>
+
+        <div class="mt-3 grid grid-cols-1 gap-3">
+          <label class="text-sm">
+            <div class="text-slate-400 text-xs mb-1">Tournament Name</div>
+            <input id="tName" class="w-full rounded-lg bg-slate-900 border border-slate-800 px-3 py-2 outline-none"
+              placeholder="ES Aikido Bash #12" />
+          </label>
+
+          <div class="grid grid-cols-2 gap-3">
+            <label class="text-sm">
+              <div class="text-slate-400 text-xs mb-1">Mod</div>
+              <input id="tMod" class="w-full rounded-lg bg-slate-900 border border-slate-800 px-3 py-2 outline-none"
+                placeholder="aikido.tbm" />
+            </label>
+            <label class="text-sm">
+              <div class="text-slate-400 text-xs mb-1">Format</div>
+              <select id="tFormat" class="w-full rounded-lg bg-slate-900 border border-slate-800 px-3 py-2 outline-none">
+                <option value="FT1">FT1</option>
+                <option value="FT3" selected>FT3</option>
+                <option value="FT5">FT5</option>
+                <option value="BO3">BO3</option>
+                <option value="BO5">BO5</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <label class="text-sm">
+              <div class="text-slate-400 text-xs mb-1">Turn Limit</div>
+              <input id="tTurns" type="number" class="w-full rounded-lg bg-slate-900 border border-slate-800 px-3 py-2 outline-none"
+                placeholder="150" />
+            </label>
+            <label class="text-sm">
+              <div class="text-slate-400 text-xs mb-1">Round Deadline (hrs)</div>
+              <input id="tDeadline" type="number" class="w-full rounded-lg bg-slate-900 border border-slate-800 px-3 py-2 outline-none"
+                placeholder="24" />
+            </label>
+          </div>
+
+          <label class="flex items-center gap-2 text-sm">
+            <input id="tReplayReq" type="checkbox" class="accent-emerald-500" checked />
+            <span>Replay required (recommended)</span>
+          </label>
+
+          <label class="text-sm">
+            <div class="text-slate-400 text-xs mb-1">Rules / Notes</div>
+            <textarea id="tRules" rows="3"
+              class="w-full rounded-lg bg-slate-900 border border-slate-800 px-3 py-2 outline-none"
+              placeholder="DQ if no response in 24h. Post replays in thread or upload to match."></textarea>
+          </label>
+        </div>
+      </div>
+
+      <div class="rounded-2xl border border-slate-800 bg-slate-950 p-4">
+        <div class="flex items-center justify-between">
+          <h2 class="font-semibold">Players</h2>
+          <div class="text-xs text-slate-400">Power-of-two recommended</div>
+        </div>
+
+        <div class="mt-3">
+          <div class="text-xs text-slate-400 mb-2">
+            Enter one name per line. Seeds are assigned by order (top = seed 1).
+          </div>
+          <textarea id="players" rows="10"
+            class="w-full rounded-lg bg-slate-900 border border-slate-800 px-3 py-2 outline-none font-mono text-sm"
+            placeholder="PlayerOne&#10;PlayerTwo&#10;PlayerThree"></textarea>
+        </div>
+
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button id="btnGenerate" class="px-3 py-2 rounded-lg bg-blue-700 hover:bg-blue-600 text-sm">
+            Generate Bracket
+          </button>
+          <button id="btnShuffle" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm">
+            Shuffle Seeds
+          </button>
+          <button id="btnSaveLocal" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm">
+            Save (Local)
+          </button>
+          <button id="btnLoadLocal" class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm">
+            Load (Local)
+          </button>
+        </div>
+
+        <div id="hint" class="mt-3 text-xs text-slate-400"></div>
+      </div>
+
+      <div class="rounded-2xl border border-slate-800 bg-slate-950 p-4">
+        <h2 class="font-semibold">Views</h2>
+        <div class="mt-3 flex gap-2">
+          <button data-view="bracket" class="viewBtn px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm">Bracket</button>
+          <button data-view="matches" class="viewBtn px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm">Matches</button>
+          <button data-view="thread" class="viewBtn px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm">Thread BBCode</button>
+        </div>
+        <div class="mt-3 text-xs text-slate-400">
+          Tip: “Matches” view is best for mobile; “Bracket” matches the Challonge vibe.
+        </div>
+      </div>
+    </section>
+
+    <!-- Right: Content -->
+    <section class="lg:col-span-8 space-y-4">
+      <!-- Status Bar -->
+      <div class="rounded-2xl border border-slate-800 bg-slate-950 p-4 flex flex-wrap items-center gap-3">
+        <div class="flex-1">
+          <div id="statusTitle" class="font-semibold">No bracket yet</div>
+          <div id="statusMeta" class="text-xs text-slate-400">Generate a bracket to begin.</div>
+        </div>
+        <span id="liveBadge" class="hidden text-xs px-2 py-1 rounded bg-red-600/20 text-red-300 border border-red-700/40">
+          ● LIVE
+        </span>
+      </div>
+
+      <!-- Bracket View -->
+      <div id="viewBracket" class="rounded-2xl border border-slate-800 bg-slate-950 p-4 overflow-x-auto hidden">
+        <div id="bracket" class="flex gap-8"></div>
+      </div>
+
+      <!-- Matches View -->
+      <div id="viewMatches" class="rounded-2xl border border-slate-800 bg-slate-950 p-4 hidden">
+        <div class="flex items-center justify-between">
+          <div class="font-semibold">Matches</div>
+          <div class="text-xs text-slate-400">Click a match to set winner / score.</div>
+        </div>
+        <div id="matchesList" class="mt-3 space-y-2"></div>
+      </div>
+
+      <!-- Thread View -->
+      <div id="viewThread" class="rounded-2xl border border-slate-800 bg-slate-950 p-4 hidden">
+        <div class="flex items-center justify-between">
+          <div class="font-semibold">BBCode Thread Output</div>
+          <button id="btnCopyThread" class="text-sm px-3 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-600">
+            Copy BBCode
+          </button>
+        </div>
+        <div class="mt-3 text-xs text-slate-400">
+          Paste this into the Toribash event thread. Update the “Bracket Link” as you share it.
+        </div>
+        <textarea id="threadOut" rows="18"
+          class="mt-3 w-full rounded-lg bg-slate-900 border border-slate-800 px-3 py-2 outline-none font-mono text-sm"></textarea>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal -->
+  <div id="modal" class="fixed inset-0 hidden items-center justify-center bg-black/60 z-50">
+    <div class="w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-950 p-4">
+      <div class="flex items-center justify-between">
+        <div class="font-semibold">Edit Match</div>
+        <button id="modalClose" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-sm">Close</button>
+      </div>
+
+      <div id="modalBody" class="mt-3 space-y-3"></div>
+
+      <div class="mt-4 flex gap-2 justify-end">
+        <button id="modalSave" class="px-3 py-2 rounded-lg bg-blue-700 hover:bg-blue-600 text-sm">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-5 right-5 hidden px-4 py-2 rounded-lg bg-slate-900 border border-slate-700 shadow-lg text-sm"></div>
+
+<script>
+/**
+ * DATA MODEL (static)
+ * tournament = {
+ *   meta: { name, mod, format, turns, deadlineHrs, replayRequired, rules, updatedAt },
+ *   players: [{name, seed}],
+ *   rounds: [ [match, match, ...], [match, ...], ... ],
+ * }
+ * match = {
+ *   id, roundIndex, matchIndex,
+ *   p1: { name, seed } | null,
+ *   p2: { name, seed } | null,
+ *   winner: "p1"|"p2"|null,
+ *   score: { p1: number|null, p2: number|null },
+ *   replays: [urlString],
+ *   notes: string
+ * }
+ */
+
+const LS_KEY = "tb_tournament_v1";
+let state = null;
+let currentView = "bracket";
+
+const el = (id) => document.getElementById(id);
+const toast = (msg) => {
+  const t = el("toast");
+  t.textContent = msg;
+  t.classList.remove("hidden");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.add("hidden"), 1800);
+};
+
+function nowISO(){ return new Date().toISOString(); }
+
+function readMetaFromForm(){
+  return {
+    name: el("tName").value.trim() || "Untitled Tournament",
+    mod: el("tMod").value.trim() || "unknown.tbm",
+    format: el("tFormat").value,
+    turns: Number(el("tTurns").value || 0) || null,
+    deadlineHrs: Number(el("tDeadline").value || 0) || null,
+    replayRequired: el("tReplayReq").checked,
+    rules: el("tRules").value.trim(),
+    updatedAt: nowISO(),
+  };
+}
+
+function writeMetaToForm(meta){
+  el("tName").value = meta.name || "";
+  el("tMod").value = meta.mod || "";
+  el("tFormat").value = meta.format || "FT3";
+  el("tTurns").value = meta.turns ?? "";
+  el("tDeadline").value = meta.deadlineHrs ?? "";
+  el("tReplayReq").checked = !!meta.replayRequired;
+  el("tRules").value = meta.rules || "";
+}
+
+function parsePlayers(text){
+  const lines = text.split("\n").map(s => s.trim()).filter(Boolean);
+  return lines.map((name, i) => ({ name, seed: i+1 }));
+}
+
+function shuffleArray(arr){
+  const a = arr.slice();
+  for (let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a.map((p,i)=>({name:p.name, seed:i+1}));
+}
+
+function nextPow2(n){
+  let p=1; while(p<n) p*=2; return p;
+}
+
+/** Create rounds for single elimination */
+function generateBracket(players, meta){
+  const n = players.length;
+  if (n < 2) throw new Error("Need at least 2 players.");
+  const size = nextPow2(n);
+  const byes = size - n;
+
+  // seeded list with BYEs at end
+  const seeded = players.slice();
+  for(let i=0;i<byes;i++) seeded.push({ name: "BYE", seed: n+i+1, bye:true });
+
+  // Classic seeding pairs: 1 vs N, 2 vs N-1, ...
+  // For simple MVP, just pair top-bottom.
+  const firstRoundMatches = [];
+  const totalMatchesR1 = size/2;
+  for(let i=0;i<totalMatchesR1;i++){
+    const p1 = seeded[i];
+    const p2 = seeded[size-1-i];
+    firstRoundMatches.push(makeMatch(0, i, p1, p2));
+  }
+
+  const rounds = [firstRoundMatches];
+
+  // subsequent rounds empty, winners will be propagated
+  let matchesInRound = totalMatchesR1;
+  let r = 1;
+  while(matchesInRound > 1){
+    matchesInRound = matchesInRound/2;
+    const round = [];
+    for(let i=0;i<matchesInRound;i++){
+      round.push(makeMatch(r, i, null, null));
+    }
+    rounds.push(round);
+    r++;
+  }
+
+  const t = { meta, players: seeded.filter(p=>!p.bye), rounds };
+  autoAdvanceByes(t);
+  propagateAll(t);
+  return t;
+}
+
+function makeMatch(roundIndex, matchIndex, p1, p2){
+  return {
+    id: `r${roundIndex}m${matchIndex}`,
+    roundIndex,
+    matchIndex,
+    p1: p1 && !p1.bye ? { name:p1.name, seed:p1.seed } : (p1?.bye ? { name:"BYE", seed:p1.seed, bye:true } : null),
+    p2: p2 && !p2.bye ? { name:p2.name, seed:p2.seed } : (p2?.bye ? { name:"BYE", seed:p2.seed, bye:true } : null),
+    winner: null,
+    score: { p1: null, p2: null },
+    replays: [],
+    notes: ""
+  };
+}
+
+/** If match has BYE, auto-advance the real player */
+function autoAdvanceByes(t){
+  const r0 = t.rounds[0];
+  for(const m of r0){
+    const a = m.p1, b = m.p2;
+    if (a?.bye && b?.bye){
+      // weird, leave empty
+    } else if (a?.bye && b && !b.bye){
+      m.winner = "p2";
+      m.score = { p1: 0, p2: 1 };
+    } else if (b?.bye && a && !a.bye){
+      m.winner = "p1";
+      m.score = { p1: 1, p2: 0 };
+    }
+  }
+}
+
+function getWinnerPlayer(match){
+  if (!match.winner) return null;
+  const wp = match.winner === "p1" ? match.p1 : match.p2;
+  if (!wp || wp.bye) return null;
+  return { name: wp.name, seed: wp.seed };
+}
+
+/** Put winners into next round slots */
+function propagateAll(t){
+  for(let r=0;r<t.rounds.length-1;r++){
+    const round = t.rounds[r];
+    const next = t.rounds[r+1];
+    for(let i=0;i<next.length;i++){
+      const m1 = round[i*2];
+      const m2 = round[i*2+1];
+      const w1 = m1 ? getWinnerPlayer(m1) : null;
+      const w2 = m2 ? getWinnerPlayer(m2) : null;
+      next[i].p1 = w1;
+      next[i].p2 = w2;
+
+      // If one side is known and the other is null (waiting), keep winner null.
+      // If one side is known and other is missing permanently (shouldn't happen beyond BYEs), we can auto.
+      next[i].winner = null;
+      next[i].score = { p1:null, p2:null };
+      next[i].replays = next[i].replays || [];
+      next[i].notes = next[i].notes || "";
+    }
+  }
+}
+
+function setView(v){
+  currentView = v;
+  el("viewBracket").classList.toggle("hidden", v !== "bracket");
+  el("viewMatches").classList.toggle("hidden", v !== "matches");
+  el("viewThread").classList.toggle("hidden", v !== "thread");
+  render();
+}
+
+function updateStatus(){
+  if(!state){
+    el("statusTitle").textContent = "No bracket yet";
+    el("statusMeta").textContent = "Generate a bracket to begin.";
+    el("liveBadge").classList.add("hidden");
+    return;
+  }
+  const m = state.meta;
+  el("statusTitle").textContent = m.name;
+  const bits = [
+    `Mod: ${m.mod}`,
+    `Format: ${m.format}`,
+    m.turns ? `Turns: ${m.turns}` : null,
+    m.deadlineHrs ? `Deadline: ${m.deadlineHrs}h` : null,
+    m.replayRequired ? `Replays: required` : `Replays: optional`,
+    `Updated: ${new Date(m.updatedAt).toLocaleString()}`
+  ].filter(Boolean);
+  el("statusMeta").textContent = bits.join(" • ");
+  el("liveBadge").classList.remove("hidden");
+}
+
+function renderBracket(){
+  const container = el("bracket");
+  container.innerHTML = "";
+  if(!state) return;
+
+  state.rounds.forEach((round, rIdx) => {
+    const col = document.createElement("div");
+    col.className = "round-col";
+    col.innerHTML = `
+      <div class="text-sm font-semibold mb-3 text-slate-300">Round ${rIdx+1}</div>
+      <div class="space-y-3"></div>
+    `;
+    const list = col.querySelector("div.space-y-3");
+
+    round.forEach((m, mIdx) => {
+      const card = document.createElement("button");
+      card.className = "match-card w-full text-left rounded-xl border border-slate-800 bg-slate-900 hover:bg-slate-800 transition p-3";
+      card.onclick = () => openMatchModal(m.id);
+
+      const p1 = formatPlayerLine(m.p1, m.winner === "p1");
+      const p2 = formatPlayerLine(m.p2, m.winner === "p2");
+      const score = (m.score.p1 != null || m.score.p2 != null) ? `${m.score.p1 ?? "-"}–${m.score.p2 ?? "-"}` : "";
+      const replays = m.replays?.length ? `• ${m.replays.length} replay(s)` : "";
+      const small = `<div class="text-xs text-slate-400 mt-2">${score} ${replays}</div>`;
+
+      // connectors: add to all but final round for a similar vibe
+      if (rIdx < state.rounds.length - 1) card.classList.add("connector-right");
+
+      card.innerHTML = `
+        <div class="flex items-start justify-between gap-2">
+          <div class="flex-1">
+            ${p1}
+            ${p2}
+            ${small}
+          </div>
+          <div class="text-xs text-slate-500">#${m.id}</div>
+        </div>
+      `;
+
+      list.appendChild(card);
+
+      // Add vertical connector visual between pairs (simple)
+      if (rIdx < state.rounds.length - 1 && mIdx % 2 === 0){
+        const vert = document.createElement("div");
+        vert.className = "relative";
+        vert.style.height = "0px";
+        // Put a vertical line "overlay" on the first of the pair
+        card.appendChild(Object.assign(document.createElement("div"), { className:"connector-vert" }));
+      }
+    });
+
+    container.appendChild(col);
+  });
+}
+
+function formatPlayerLine(p, isWinner){
+  if(!p) return `<div class="text-sm text-slate-500">TBD</div>`;
+  if(p.bye) return `<div class="text-sm text-slate-500">BYE</div>`;
+  const win = isWinner ? "text-emerald-300 font-semibold" : "text-slate-200";
+  return `<div class="text-sm ${win}"><span class="text-slate-500 mr-2">(${p.seed})</span>${escapeHtml(p.name)}</div>`;
+}
+
+function renderMatches(){
+  const box = el("matchesList");
+  box.innerHTML = "";
+  if(!state){
+    box.innerHTML = `<div class="text-sm text-slate-400">No matches yet.</div>`;
+    return;
+  }
+
+  state.rounds.forEach((round, rIdx)=>{
+    const header = document.createElement("div");
+    header.className = "mt-4 mb-2 text-sm font-semibold text-slate-300";
+    header.textContent = `Round ${rIdx+1}`;
+    box.appendChild(header);
+
+    round.forEach((m)=>{
+      const row = document.createElement("button");
+      row.className = "w-full text-left rounded-xl border border-slate-800 bg-slate-900 hover:bg-slate-800 transition p-3";
+      row.onclick = ()=>openMatchModal(m.id);
+
+      const p1 = m.p1?.name && !m.p1?.bye ? m.p1.name : "TBD";
+      const p2 = m.p2?.name && !m.p2?.bye ? m.p2.name : "TBD";
+      const w = m.winner ? (m.winner==="p1"?p1:p2) : "—";
+      const score = (m.score.p1 != null || m.score.p2 != null) ? `${m.score.p1 ?? "-"}–${m.score.p2 ?? "-"}` : "—";
+
+      row.innerHTML = `
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <div class="text-sm">${escapeHtml(p1)} <span class="text-slate-500">vs</span> ${escapeHtml(p2)}</div>
+            <div class="text-xs text-slate-400 mt-1">Winner: ${escapeHtml(w)} • Score: ${escapeHtml(score)} • Replays: ${m.replays?.length||0}</div>
+          </div>
+          <div class="text-xs text-slate-500">${m.id}</div>
+        </div>
+      `;
+      box.appendChild(row);
+    });
+  });
+}
+
+function renderThread(){
+  if(!state){
+    el("threadOut").value = "";
+    return;
+  }
+  const shareLink = buildShareLink(); // current link
+  const m = state.meta;
+
+  const bb = [];
+  bb.push(`[center][size=huge][b]${m.name}[/b][/size][/center]`);
+  bb.push(``);
+  bb.push(`[b]Mod:[/b] ${m.mod}`);
+  bb.push(`[b]Format:[/b] ${m.format}`);
+  if (m.turns) bb.push(`[b]Turn Limit:[/b] ${m.turns}`);
+  if (m.deadlineHrs) bb.push(`[b]Round Deadline:[/b] ${m.deadlineHrs}h`);
+  bb.push(`[b]Replays:[/b] ${m.replayRequired ? "Required" : "Optional"}`);
+  bb.push(``);
+  bb.push(`[b]Bracket Link:[/b] [url=${shareLink}]Click here to view the live bracket[/url]`);
+  bb.push(``);
+  bb.push(`[quote][b]Rules / Notes[/b]\n${m.rules || "Add rules here."}\n[/quote]`);
+  bb.push(``);
+  bb.push(`[b]Sign-up Format:[/b]`);
+  bb.push(`[code]In-Game Name:\nBelt:\nClan (optional):\nDiscord (optional):[/code]`);
+  bb.push(``);
+  bb.push(`[b]Participants:[/b]`);
+  bb.push(`[list]`);
+  state.players.forEach((p, i)=> bb.push(`[*] (${i+1}) ${p.name}`));
+  bb.push(`[/list]`);
+  bb.push(``);
+  bb.push(`[b]Matches (Round 1):[/b]`);
+  bb.push(`[code]`);
+  const r0 = state.rounds[0] || [];
+  r0.forEach((match, i)=>{
+    const p1 = match.p1?.name && !match.p1?.bye ? match.p1.name : "TBD";
+    const p2 = match.p2?.name && !match.p2?.bye ? match.p2.name : "TBD";
+    bb.push(`Match ${i+1}: ${p1} vs ${p2}`);
+  });
+  bb.push(`[/code]`);
+
+  el("threadOut").value = bb.join("\n");
+}
+
+function render(){
+  updateStatus();
+  if(currentView === "bracket") renderBracket();
+  if(currentView === "matches") renderMatches();
+  if(currentView === "thread") renderThread();
+}
+
+function escapeHtml(s){
+  return (s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function findMatchById(id){
+  for(const round of state.rounds){
+    for(const m of round){
+      if(m.id === id) return m;
+    }
+  }
+  return null;
+}
+
+// Modal logic
+let modalMatchId = null;
+
+function openMatchModal(matchId){
+  if(!state) return;
+  const m = findMatchById(matchId);
+  if(!m) return;
+
+  modalMatchId = matchId;
+  const p1 = m.p1?.bye ? null : m.p1;
+  const p2 = m.p2?.bye ? null : m.p2;
+
+  const body = el("modalBody");
+  body.innerHTML = "";
+
+  body.appendChild(makeKV("Match", matchId));
+  body.appendChild(makeKV("Players", `${p1?.name || "TBD"} vs ${p2?.name || "TBD"}`));
+  body.appendChild(makeKV("Format", state.meta.format));
+  body.appendChild(makeKV("Mod", state.meta.mod));
+
+  // Winner select
+  const winnerWrap = document.createElement("div");
+  winnerWrap.innerHTML = `
+    <div class="text-xs text-slate-400 mb-1">Winner</div>
+    <select id="mwinner" class="w-full rounded-lg bg-slate-900 border border-slate-800 px-3 py-2 outline-none">
+      <option value="">Not set</option>
+      <option value="p1">${p1 ? `${p1.name} (seed ${p1.seed})` : "P1 TBD"}</option>
+      <option value="p2">${p2 ? `${p2.name} (seed ${p2.seed})` : "P2 TBD"}</option>
+    </select>
+  `;
+  body.appendChild(winnerWrap);
+
+  // Score
+  const scoreWrap = document.createElement("div");
+  scoreWrap.className = "grid grid-cols-2 gap-3";
+  scoreWrap.innerHTML = `
+    <label>
+      <div class="text-xs text-slate-400 mb-1">Score P1</div>
+      <input id="ms1" type="number" class="w-full rounded-lg bg-slate-900 border border-slate-800 px-3 py-2 outline-none" placeholder="0">
+    </label>
+    <label>
+      <div class="text-xs text-slate-400 mb-1">Score P2</div>
+      <input id="ms2" type="number" class="w-full rounded-lg bg-slate-900 border border-slate-800 px-3 py-2 outline-none" placeholder="0">
+    </label>
+  `;
+  body.appendChild(scoreWrap);
+
+  // Replays
+  const replayWrap = document.createElement("div");
+  replayWrap.innerHTML = `
+    <div class="text-xs text-slate-400 mb-1">Replay links (one per line)</div>
+    <textarea id="mreplays" rows="4"
+      class="w-full rounded-lg bg-slate-900 border border-slate-800 px-3 py-2 outline-none font-mono text-sm"
+      placeholder="https://..."></textarea>
+  `;
+  body.appendChild(replayWrap);
+
+  // Notes
+  const notesWrap = document.createElement("div");
+  notesWrap.innerHTML = `
+    <div class="text-xs text-slate-400 mb-1">Host notes</div>
+    <textarea id="mnotes" rows="3"
+      class="w-full rounded-lg bg-slate-900 border border-slate-800 px-3 py-2 outline-none"
+      placeholder="DQ / scheduling notes / disputes..."></textarea>
+  `;
+  body.appendChild(notesWrap);
+
+  // Fill current values
+  el("mwinner").value = m.winner || "";
+  el("ms1").value = m.score.p1 ?? "";
+  el("ms2").value = m.score.p2 ?? "";
+  el("mreplays").value = (m.replays || []).join("\n");
+  el("mnotes").value = m.notes || "";
+
+  el("modal").classList.remove("hidden");
+  el("modal").classList.add("flex");
+}
+
+function closeModal(){
+  el("modal").classList.add("hidden");
+  el("modal").classList.remove("flex");
+  modalMatchId = null;
+}
+
+function makeKV(k,v){
+  const d = document.createElement("div");
+  d.className = "text-sm";
+  d.innerHTML = `<span class="text-slate-400">${escapeHtml(k)}:</span> <span>${escapeHtml(String(v))}</span>`;
+  return d;
+}
+
+function saveModal(){
+  if(!state || !modalMatchId) return;
+  const m = findMatchById(modalMatchId);
+  if(!m) return;
+
+  const w = el("mwinner").value || null;
+  const s1 = el("ms1").value === "" ? null : Number(el("ms1").value);
+  const s2 = el("ms2").value === "" ? null : Number(el("ms2").value);
+  const reps = el("mreplays").value.split("\n").map(s=>s.trim()).filter(Boolean);
+  const notes = el("mnotes").value.trim();
+
+  // Prevent choosing winner if player missing
+  if ((w==="p1" && (!m.p1 || m.p1.bye)) || (w==="p2" && (!m.p2 || m.p2.bye))) {
+    toast("Cannot set winner: player is TBD/BYE");
+    return;
+  }
+
+  m.winner = w;
+  m.score = { p1: s1, p2: s2 };
+  m.replays = reps;
+  m.notes = notes;
+
+  // Update meta timestamp
+  state.meta.updatedAt = nowISO();
+
+  // propagate winners downstream
+  propagateAll(state);
+
+  // save locally
+  saveLocalSilently();
+  render();
+  closeModal();
+  toast("Match updated");
+}
+
+// Local storage
+function saveLocalSilently(){
+  if(!state) return;
+  localStorage.setItem(LS_KEY, JSON.stringify(state));
+}
+
+function saveLocal(){
+  saveLocalSilently();
+  toast("Saved locally");
+}
+
+function loadLocal(){
+  const raw = localStorage.getItem(LS_KEY);
+  if(!raw){ toast("No saved tournament found"); return; }
+  try{
+    state = JSON.parse(raw);
+    hydrateFormFromState();
+    render();
+    toast("Loaded");
+  } catch {
+    toast("Failed to load saved data");
+  }
+}
+
+function clearState(){
+  state = null;
+  el("players").value = "";
+  writeMetaToForm({
+    name:"", mod:"", format:"FT3", turns:null, deadlineHrs:null, replayRequired:true, rules:"", updatedAt: nowISO()
+  });
+  render();
+  toast("New tournament");
+}
+
+function hydrateStateFromForm(){
+  const meta = readMetaFromForm();
+  const players = parsePlayers(el("players").value);
+  return { meta, players, rounds: [] };
+}
+
+function hydrateFormFromState(){
+  if(!state) return;
+  writeMetaToForm(state.meta);
+  el("players").value = state.players.map(p=>p.name).join("\n");
+}
+
+// Sharing via URL hash (compressed-ish base64)
+function encodeStateToHash(obj){
+  const json = JSON.stringify(obj);
+  const b64 = btoa(unescape(encodeURIComponent(json)));
+  return b64;
+}
+function decodeStateFromHash(hash){
+  const b64 = hash.replace(/^#/, "");
+  const json = decodeURIComponent(escape(atob(b64)));
+  return JSON.parse(json);
+}
+function buildShareLink(){
+  const base = location.href.split("#")[0];
+  if(!state) return base;
+  const payload = encodeStateToHash(state);
+  return `${base}#${payload}`;
+}
+async function shareLink(){
+  if(!state){ toast("Nothing to share yet"); return; }
+  const link = buildShareLink();
+  try{
+    await navigator.clipboard.writeText(link);
+    toast("Share link copied");
+  } catch {
+    prompt("Copy this link:", link);
+  }
+}
+
+// Generate
+function generateFromForm(){
+  const meta = readMetaFromForm();
+  let players = parsePlayers(el("players").value);
+
+  if(players.length < 2){
+    toast("Add at least 2 players");
+    return;
+  }
+
+  // Warn if not power-of-two
+  const size = nextPow2(players.length);
+  const byes = size - players.length;
+  el("hint").textContent = byes ? `Bracket size will be ${size}. BYEs: ${byes} (auto-advanced).` : `Bracket size: ${size} (perfect).`;
+
+  try{
+    state = generateBracket(players, meta);
+    saveLocalSilently();
+    render();
+    toast("Bracket generated");
+  } catch (e){
+    toast(e.message || "Failed to generate");
+  }
+}
+
+function shuffleSeeds(){
+  const players = parsePlayers(el("players").value);
+  if(players.length < 2){
+    toast("Add players first");
+    return;
+  }
+  const shuffled = shuffleArray(players);
+  el("players").value = shuffled.map(p=>p.name).join("\n");
+  toast("Shuffled");
+}
+
+// Buttons / events
+el("btnGenerate").addEventListener("click", generateFromForm);
+el("btnShuffle").addEventListener("click", shuffleSeeds);
+el("btnSaveLocal").addEventListener("click", saveLocal);
+el("btnLoadLocal").addEventListener("click", loadLocal);
+el("btnShare").addEventListener("click", shareLink);
+el("btnNew").addEventListener("click", clearState);
+el("btnCopyThread").addEventListener("click", () => {
+  const txt = el("threadOut").value;
+  navigator.clipboard.writeText(txt);
+  toast("BBCode copied");
+});
+el("btnCopyBBCode").addEventListener("click", () => {
+  setView("thread");
+  setTimeout(()=> {
+    navigator.clipboard.writeText(el("threadOut").value);
+    toast("BBCode copied");
+  }, 50);
+});
+
+document.querySelectorAll(".viewBtn").forEach(btn=>{
+  btn.addEventListener("click", ()=> setView(btn.dataset.view));
+});
+
+el("modalClose").addEventListener("click", closeModal);
+el("modalSave").addEventListener("click", saveModal);
+el("modal").addEventListener("click", (e)=> { if(e.target === el("modal")) closeModal(); });
+
+// Boot: load from URL hash or localStorage
+function boot(){
+  // 1) Try hash (shared link)
+  if(location.hash && location.hash.length > 10){
+    try{
+      state = decodeStateFromHash(location.hash);
+      hydrateFormFromState();
+      saveLocalSilently();
+      toast("Loaded from shared link");
+    } catch {
+      // ignore
+    }
+  }
+
+  // 2) If no state from hash, try local
+  if(!state){
+    const raw = localStorage.getItem(LS_KEY);
+    if(raw){
+      try{
+        state = JSON.parse(raw);
+        hydrateFormFromState();
+      } catch {}
+    } else {
+      // defaults
+      writeMetaToForm({
+        name:"ES Aikido Bash!",
+        mod:"aikido.tbm",
+        format:"FT3",
+        turns:150,
+        deadlineHrs:24,
+        replayRequired:true,
+        rules:"• FT3 unless specified\n• If no response in 24h: DQ\n• Replays required for finals",
+        updatedAt: nowISO()
+      });
+      el("players").value = "Nicotine\nNinjaBee\nMora\nDuwap\nMahoraga\nHater\nHampus\nAxels";
+    }
+  }
+
+  setView("bracket");
+  render();
+}
+boot();
+</script>
+</body>
+</html>
 
